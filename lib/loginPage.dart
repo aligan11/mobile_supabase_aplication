@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:healthmobile/HomePage.dart';
 import 'package:healthmobile/RegisterPage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Loginpage extends StatefulWidget {
@@ -12,6 +13,7 @@ class Loginpage extends StatefulWidget {
 
 final emailController = TextEditingController();
 final passwordController = TextEditingController();
+bool isVisible = false;
 
 bool isLoading = false;
 
@@ -40,6 +42,13 @@ class _loginPageState extends State<Loginpage> {
       if (user == null) {
         throw Exception('gagal dimuat');
       }
+
+      // sharefPreferences
+      final pref = await SharedPreferences.getInstance();
+
+      await pref.setBool('isLogin', true);
+      await pref.setString('user_id', user.id);
+      await pref.setString('email', user.email ?? "");
 
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -98,7 +107,18 @@ class _loginPageState extends State<Loginpage> {
               decoration: InputDecoration(
                 labelText: 'Password',
                 border: OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  onPressed: () {
+                    setState(() {
+                      isVisible = !isVisible;
+                    });
+                  },
+                  icon: Icon(
+                    isVisible ? Icons.visibility : Icons.visibility_off,
+                  ),
+                ),
               ),
+              obscureText: !isVisible,
             ),
 
             const SizedBox(height: 40),
