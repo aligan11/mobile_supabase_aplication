@@ -40,15 +40,16 @@ class DoctorService {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  Future<List<Map<String, dynamic>>> getSchedulesByDoctor(
-      String doctorId) async {
+  Future<List<Map<String, dynamic>>> getAllSchedulesByDoctor(
+    String doctorId,
+  ) async {
     final response = await _client
         .from('doctor_schedules')
         .select()
         .eq('doctor_id', doctorId)
-        .eq('available', true)
         .order('date', ascending: true)
         .order('start_time', ascending: true);
+
     return List<Map<String, dynamic>>.from(response);
   }
 
@@ -56,9 +57,9 @@ class DoctorService {
     final response = await _client
         .from('doctor_schedules')
         .select('*, doctors(*)')
-        .eq('available', true)
         .order('date', ascending: true)
         .order('start_time', ascending: true);
+
     return List<Map<String, dynamic>>.from(response);
   }
 

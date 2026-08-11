@@ -2,8 +2,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppointmentService {
   final SupabaseClient _client = Supabase.instance.client;
+  static const String appointmentCodePrefix = 'MEDICARE-';
 
   String? get currentUserId => _client.auth.currentUser?.id;
+
+  String buildAppointmentCode(String appointmentId) {
+    return '$appointmentCodePrefix$appointmentId';
+  }
+
+  String extractAppointmentId(String code) {
+    final normalizedCode = code.trim();
+    if (normalizedCode.startsWith(appointmentCodePrefix)) {
+      return normalizedCode.substring(appointmentCodePrefix.length);
+    }
+    return normalizedCode;
+  }
 
   Future<List<Map<String, dynamic>>> getUserAppointments() async {
     final userId = currentUserId;
@@ -39,7 +52,7 @@ class AppointmentService {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  Future<void> createAppointment({
+  Future<Map<String, dynamic>> createAppointment({
     required String doctorId,
     required String scheduleId,
     required String appointmentDate,
@@ -47,13 +60,25 @@ class AppointmentService {
     final userId = currentUserId;
     if (userId == null) throw Exception('User not logged in');
 
-    await _client.from('appointments').insert({
-      'user_id': userId,
-      'doctor_id': doctorId,
-      'schedule_id': scheduleId,
-      'appointment_date': appointmentDate,
-      'status': 'pending',
-    });
+    final createdAppointment = await _client
+        .from('appointments')
+        .insert({
+          'user_id': userId,
+          'doctor_id': doctorId,
+          'schedule_id': scheduleId,
+          'appointment_date': appointmentDate,
+          'status': 'pending',
+        })
+        .select()
+        .single();
+
+    final appointmentId = createdAppointment['id']?.toString();
+    if (appointmentId == null || appointmentId.isEmpty) {
+      return Map<String, dynamic>.from(createdAppointment);
+    }
+
+    return await getAppointmentById(appointmentId) ??
+        Map<String, dynamic>.from(createdAppointment);
   }
 
   Future<void> updateAppointmentStatus(
@@ -126,7 +151,8 @@ class AppointmentService {
     final userId = currentUserId;
     if (userId == null) return null;
 
-    final appointmentId = code.replaceFirst('MEDICARE-', '');
+    final appointmentId = extractAppointmentId(code);
+    if (appointmentId.isEmpty) return null;
 
     final response = await _client
         .from('appointments')

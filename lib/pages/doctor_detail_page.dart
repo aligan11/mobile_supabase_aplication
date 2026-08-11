@@ -13,8 +13,12 @@ class DoctorDetailPage extends StatefulWidget {
 
 class _DoctorDetailPageState extends State<DoctorDetailPage> {
   final DoctorService _doctorService = DoctorService();
+
   Map<String, dynamic>? _doctor;
   bool _isLoading = true;
+  bool _hasAvailableSchedule = false;
+
+  bool _isCheckingSchedule = true;
 
   @override
   void initState() {
@@ -23,21 +27,65 @@ class _DoctorDetailPageState extends State<DoctorDetailPage> {
   }
 
   Future<void> _loadDoctor() async {
-    setState(() => _isLoading = true);
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _isCheckingSchedule = true;
+      _hasAvailableSchedule = false;
+    });
+
     try {
+      // Ambil data dokter
       final doctor = await _doctorService.getDoctorById(widget.doctorId);
+
+      if (doctor == null) {
+        if (mounted) {
+          setState(() {
+            _doctor = null;
+            _hasAvailableSchedule = false;
+            _isLoading = false;
+            _isCheckingSchedule = false;
+          });
+        }
+        return;
+      }
+
+      // Status dokter
+      final doctorAvailable = doctor['available'] == true;
+
+      // Ambil semua jadwal dokter
+      final schedules = await _doctorService.getAllSchedulesByDoctor(
+        widget.doctorId,
+      );
+
+      // Hanya dianggap tersedia jika:
+      // 1. Dokter available = true
+      // 2. Ada minimal satu jadwal available = true
+      final hasAvailableSchedule =
+          doctorAvailable &&
+          schedules.any((schedule) => schedule['available'] == true);
+
       if (mounted) {
         setState(() {
           _doctor = doctor;
+          _hasAvailableSchedule = hasAvailableSchedule;
           _isLoading = false;
+          _isCheckingSchedule = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat data: $e')),
-        );
+        setState(() {
+          _doctor = null;
+          _hasAvailableSchedule = false;
+          _isLoading = false;
+          _isCheckingSchedule = false;
+        });
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal memuat data dokter: $e')));
       }
     }
   }
@@ -53,15 +101,18 @@ class _DoctorDetailPageState extends State<DoctorDetailPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _doctor == null
-              ? const Center(child: Text('Dokter tidak ditemukan'))
-              : _buildDetail(),
+          ? const Center(child: Text('Dokter tidak ditemukan'))
+          : _buildDetail(),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: SizedBox(
             height: 50,
             child: ElevatedButton.icon(
-              onPressed: _doctor == null
+              onPressed:
+                  (_doctor == null ||
+                      _isCheckingSchedule ||
+                      !_hasAvailableSchedule)
                   ? null
                   : () {
                       Navigator.push(
@@ -74,10 +125,27 @@ class _DoctorDetailPageState extends State<DoctorDetailPage> {
                         ),
                       );
                     },
-              icon: const Icon(Icons.calendar_month),
-              label: const Text(
-                'Ambil Jadwal',
-                style: TextStyle(fontSize: 16),
+              icon: _isCheckingSchedule
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Icon(
+                      _hasAvailableSchedule
+                          ? Icons.calendar_month
+                          : Icons.event_busy,
+                    ),
+              label: Text(
+                _isCheckingSchedule
+                    ? 'Memeriksa jadwal...'
+                    : _hasAvailableSchedule
+                    ? 'Ambil Jadwal'
+                    : 'Tidak Ada Jadwal',
+                style: const TextStyle(fontSize: 16),
               ),
             ),
           ),
@@ -88,7 +156,8 @@ class _DoctorDetailPageState extends State<DoctorDetailPage> {
 
   Widget _buildDetail() {
     final d = _doctor!;
-    final photoUrl = d['photo_url'] ??
+    final photoUrl =
+        d['photo_url'] ??
         'https://ui-avatars.com/api/?name=${Uri.encodeComponent(d['name'] ?? 'Dr')}&background=1976D2&color=fff&size=256';
 
     return SingleChildScrollView(
@@ -166,7 +235,9 @@ class _DoctorDetailPageState extends State<DoctorDetailPage> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: d['available'] == true
                             ? Colors.green.withOpacity(0.2)
@@ -192,7 +263,9 @@ class _DoctorDetailPageState extends State<DoctorDetailPage> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            d['available'] == true ? 'Tersedia' : 'Tidak Tersedia',
+                            d['available'] == true
+                                ? 'Tersedia'
+                                : 'Tidak Tersedia',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -233,7 +306,8 @@ class _DoctorDetailPageState extends State<DoctorDetailPage> {
                 Card(
                   child: Column(
                     children: [
-                      if (d['phone'] != null && d['phone'].toString().isNotEmpty)
+                      if (d['phone'] != null &&
+                          d['phone'].toString().isNotEmpty)
                         _buildInfoRow(
                           icon: Icons.phone,
                           label: 'Nomor Telepon',
@@ -311,10 +385,7 @@ class _DoctorDetailPageState extends State<DoctorDetailPage> {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -345,10 +416,7 @@ class _DoctorDetailPageState extends State<DoctorDetailPage> {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 2),
                 Text(

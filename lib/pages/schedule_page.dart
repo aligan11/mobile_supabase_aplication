@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:healthmobile/pages/appointment_qr_page.dart';
 import 'package:healthmobile/services/doctor_service.dart';
 import 'package:healthmobile/services/appointment_service.dart';
 import 'package:intl/intl.dart';
@@ -61,9 +62,9 @@ class _SchedulePageState extends State<SchedulePage>
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingAppointments = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat jadwal: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal memuat jadwal: $e')));
       }
     }
   }
@@ -73,7 +74,9 @@ class _SchedulePageState extends State<SchedulePage>
     try {
       List<Map<String, dynamic>> schedules;
       if (_selectedDoctorId != null) {
-        schedules = await _doctorService.getSchedulesByDoctor(_selectedDoctorId!);
+        schedules = await _doctorService.getAllSchedulesByDoctor(
+          _selectedDoctorId!,
+        );
         final doctor = await _doctorService.getDoctorById(_selectedDoctorId!);
         schedules = schedules.map((s) {
           return {...s, 'doctors': doctor};
@@ -91,9 +94,9 @@ class _SchedulePageState extends State<SchedulePage>
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingSchedules = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat jadwal: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal memuat jadwal: $e')));
       }
     }
   }
@@ -136,11 +139,13 @@ class _SchedulePageState extends State<SchedulePage>
 
     setState(() => _isCreating = true);
     try {
-      await _appointmentService.createAppointment(
+      final appointment = await _appointmentService.createAppointment(
         doctorId: schedule['doctor_id'],
         scheduleId: schedule['id'],
         appointmentDate: schedule['date'],
       );
+      if (!mounted) return;
+      await _loadAppointments();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -148,7 +153,7 @@ class _SchedulePageState extends State<SchedulePage>
           backgroundColor: Colors.green,
         ),
       );
-      _loadAppointments();
+      await _openAppointmentQr(appointment);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -164,12 +169,23 @@ class _SchedulePageState extends State<SchedulePage>
     }
   }
 
+  Future<void> _openAppointmentQr(Map<String, dynamic> appointment) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AppointmentQrPage(appointment: appointment),
+      ),
+    );
+  }
+
   Future<void> _cancelAppointment(Map<String, dynamic> appointment) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Batalkan Janji Temu'),
-        content: const Text('Apakah Anda yakin ingin membatalkan janji temu ini?'),
+        content: const Text(
+          'Apakah Anda yakin ingin membatalkan janji temu ini?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -198,9 +214,9 @@ class _SchedulePageState extends State<SchedulePage>
       _loadAppointments();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal membatalkan: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal membatalkan: $e')));
     }
   }
 
@@ -209,7 +225,9 @@ class _SchedulePageState extends State<SchedulePage>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Hapus Janji Temu'),
-        content: const Text('Apakah Anda yakin ingin menghapus janji temu ini?'),
+        content: const Text(
+          'Apakah Anda yakin ingin menghapus janji temu ini?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -238,9 +256,9 @@ class _SchedulePageState extends State<SchedulePage>
       _loadAppointments();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menghapus: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menghapus: $e')));
     }
   }
 
@@ -268,10 +286,7 @@ class _SchedulePageState extends State<SchedulePage>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildMyAppointments(),
-          _buildAvailableSchedules(),
-        ],
+        children: [_buildMyAppointments(), _buildAvailableSchedules()],
       ),
     );
   }
@@ -287,8 +302,11 @@ class _SchedulePageState extends State<SchedulePage>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.calendar_month_outlined,
-                  size: 80, color: Colors.grey[300]),
+              Icon(
+                Icons.calendar_month_outlined,
+                size: 80,
+                color: Colors.grey[300],
+              ),
               const SizedBox(height: 16),
               const Text(
                 'Belum ada janji temu',
@@ -321,7 +339,9 @@ class _SchedulePageState extends State<SchedulePage>
     final doctor = apt['doctors'] as Map<String, dynamic>?;
     final schedule = apt['doctor_schedules'] as Map<String, dynamic>?;
     final status = apt['status'];
-    final appointmentId = apt['id'].toString().substring(0, 8).toUpperCase();
+    final appointmentCode = _appointmentService.buildAppointmentCode(
+      apt['id'].toString(),
+    );
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -359,10 +379,7 @@ class _SchedulePageState extends State<SchedulePage>
                       const SizedBox(height: 2),
                       Text(
                         doctor?['specialty'] ?? 'Spesialis',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -382,8 +399,11 @@ class _SchedulePageState extends State<SchedulePage>
                   Expanded(
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today,
-                            size: 16, color: Colors.grey[600]),
+                        Icon(
+                          Icons.calendar_today,
+                          size: 16,
+                          color: Colors.grey[600],
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           _formatDate(apt['appointment_date']),
@@ -399,8 +419,11 @@ class _SchedulePageState extends State<SchedulePage>
                   Expanded(
                     child: Row(
                       children: [
-                        Icon(Icons.access_time,
-                            size: 16, color: Colors.grey[600]),
+                        Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: Colors.grey[600],
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           '${schedule?['start_time']?.toString().substring(0, 5) ?? '-'} WIB',
@@ -418,19 +441,33 @@ class _SchedulePageState extends State<SchedulePage>
             ),
             const SizedBox(height: 8),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.qr_code, size: 16, color: Colors.grey),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Kode: MEDICARE-$appointmentId',
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.qr_code, size: 16, color: Colors.grey),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Kode Appointment',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  SelectableText(
+                    appointmentCode,
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -438,6 +475,15 @@ class _SchedulePageState extends State<SchedulePage>
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _openAppointmentQr(apt),
+                icon: const Icon(Icons.qr_code_2),
+                label: const Text('Lihat QR'),
               ),
             ),
             if (status == 'pending' || status == 'confirmed') ...[
@@ -473,9 +519,7 @@ class _SchedulePageState extends State<SchedulePage>
                   IconButton.filled(
                     onPressed: () => _deleteAppointment(apt),
                     icon: const Icon(Icons.delete, color: Colors.white),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
+                    style: IconButton.styleFrom(backgroundColor: Colors.red),
                   ),
                 ],
               ),
@@ -488,8 +532,9 @@ class _SchedulePageState extends State<SchedulePage>
 
   Future<void> _showRescheduleDialog(Map<String, dynamic> oldApt) async {
     final doctorId = oldApt['doctor_id'];
-    final availableSchedules =
-        await _doctorService.getSchedulesByDoctor(doctorId);
+    final availableSchedules = await _doctorService.getAllSchedulesByDoctor(
+      doctorId,
+    );
 
     if (!mounted) return;
 
@@ -513,8 +558,7 @@ class _SchedulePageState extends State<SchedulePage>
                         '${s['end_time']?.toString().substring(0, 5)}',
                       ),
                       trailing: s['available'] == true
-                          ? const Icon(Icons.check_circle,
-                              color: Colors.green)
+                          ? const Icon(Icons.check_circle, color: Colors.green)
                           : const Icon(Icons.cancel, color: Colors.red),
                       enabled: s['available'] == true,
                       onTap: s['available'] == true
@@ -551,9 +595,9 @@ class _SchedulePageState extends State<SchedulePage>
       _loadAppointments();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengubah jadwal: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengubah jadwal: $e')));
     }
   }
 
@@ -602,35 +646,36 @@ class _SchedulePageState extends State<SchedulePage>
           child: _isLoadingSchedules
               ? const Center(child: CircularProgressIndicator())
               : _filteredSchedules.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.event_available_outlined,
-                                size: 80, color: Colors.grey[300]),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Tidak ada jadwal tersedia',
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.grey),
-                            ),
-                          ],
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.event_available_outlined,
+                          size: 80,
+                          color: Colors.grey[300],
                         ),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadSchedules,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _filteredSchedules.length,
-                        itemBuilder: (context, index) {
-                          return _buildScheduleCard(
-                              _filteredSchedules[index]);
-                        },
-                      ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Tidak ada jadwal tersedia',
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      ],
                     ),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadSchedules,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _filteredSchedules.length,
+                    itemBuilder: (context, index) {
+                      return _buildScheduleCard(_filteredSchedules[index]);
+                    },
+                  ),
+                ),
         ),
       ],
     );
@@ -638,20 +683,32 @@ class _SchedulePageState extends State<SchedulePage>
 
   List<Map<String, dynamic>> _getUniqueDoctors() {
     final seen = <String>{};
-    return _allSchedules.where((s) {
-      final doctor = s['doctors'] as Map<String, dynamic>?;
-      if (doctor == null) return false;
-      final id = doctor['id'] as String?;
-      if (id == null) return false;
-      if (seen.contains(id)) return false;
-      seen.add(id);
-      return true;
-    }).map((s) => s['doctors'] as Map<String, dynamic>).toList();
+    return _allSchedules
+        .where((s) {
+          final doctor = s['doctors'] as Map<String, dynamic>?;
+          if (doctor == null) return false;
+          final id = doctor['id'] as String?;
+          if (id == null) return false;
+          if (seen.contains(id)) return false;
+          seen.add(id);
+          return true;
+        })
+        .map((s) => s['doctors'] as Map<String, dynamic>)
+        .toList();
   }
 
   Widget _buildScheduleCard(Map<String, dynamic> schedule) {
     final doctor = schedule['doctors'] as Map<String, dynamic>?;
-    final isAvailable = schedule['available'] == true;
+    final rawAvailable = schedule['available'];
+    final isAvailable = rawAvailable == true;
+
+    debugPrint(
+      'SCHEDULE DEBUG => '
+      'id=${schedule['id']} | '
+      'date=${schedule['date']} | '
+      'available=$rawAvailable | '
+      'type=${rawAvailable.runtimeType}',
+    );
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -669,10 +726,7 @@ class _SchedulePageState extends State<SchedulePage>
                     color: Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Color(0xFF1976D2),
-                  ),
+                  child: const Icon(Icons.person, color: Color(0xFF1976D2)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -689,10 +743,7 @@ class _SchedulePageState extends State<SchedulePage>
                       const SizedBox(height: 2),
                       Text(
                         doctor?['specialty'] ?? 'Spesialis',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -705,8 +756,11 @@ class _SchedulePageState extends State<SchedulePage>
                 Expanded(
                   child: Row(
                     children: [
-                      Icon(Icons.calendar_month,
-                          size: 18, color: Colors.grey[600]),
+                      Icon(
+                        Icons.calendar_month,
+                        size: 18,
+                        color: Colors.grey[600],
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         _formatDate(schedule['date']),
@@ -721,8 +775,11 @@ class _SchedulePageState extends State<SchedulePage>
                 Expanded(
                   child: Row(
                     children: [
-                      Icon(Icons.access_time,
-                          size: 18, color: Colors.grey[600]),
+                      Icon(
+                        Icons.access_time,
+                        size: 18,
+                        color: Colors.grey[600],
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         '${schedule['start_time']?.toString().substring(0, 5)} - '
@@ -741,8 +798,10 @@ class _SchedulePageState extends State<SchedulePage>
             Row(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: isAvailable
                         ? Colors.green.withOpacity(0.1)
@@ -770,7 +829,9 @@ class _SchedulePageState extends State<SchedulePage>
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Icon(Icons.add, size: 18),
                     label: Text(

@@ -62,8 +62,11 @@ class _ScanQRPageState extends State<ScanQRPage> {
                   color: Colors.green.shade50,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.check_circle,
-                    color: Colors.green, size: 28),
+                child: const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 12),
               const Expanded(child: Text('QR Berhasil Dipindai!')),
@@ -102,7 +105,10 @@ class _ScanQRPageState extends State<ScanQRPage> {
               const SizedBox(height: 12),
               _buildDetailRow('Dokter', doctor?['name'] ?? '-'),
               _buildDetailRow('Spesialis', doctor?['specialty'] ?? '-'),
-              _buildDetailRow('Tanggal', appointment['appointment_date'] ?? '-'),
+              _buildDetailRow(
+                'Tanggal',
+                appointment['appointment_date'] ?? '-',
+              ),
               _buildDetailRow(
                 'Jam',
                 '${schedule?['start_time']?.toString().substring(0, 5) ?? '-'} WIB',
@@ -125,9 +131,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 onPressed: () => Navigator.pop(context, true),
                 icon: const Icon(Icons.check_circle),
                 label: const Text('Check-in'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               ),
             if (currentStatus == 'checked_in')
               Padding(
@@ -192,8 +196,11 @@ class _ScanQRPageState extends State<ScanQRPage> {
                   color: Colors.orange.shade50,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child:
-                    const Icon(Icons.qr_code, color: Colors.orange, size: 28),
+                child: const Icon(
+                  Icons.qr_code,
+                  color: Colors.orange,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 12),
               const Expanded(child: Text('Hasil Scan QR')),
@@ -233,7 +240,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Untuk demo UKOM, gunakan format kode: MEDICARE-{8 digit id appointment}',
+                'Gunakan format kode: ${AppointmentService.appointmentCodePrefix}{appointment_id}',
                 style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],
@@ -266,10 +273,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -323,8 +327,10 @@ class _ScanQRPageState extends State<ScanQRPage> {
             right: 0,
             child: Center(
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(30),
@@ -352,9 +358,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 final top = (size.height - squareSize) / 2;
 
                 return Stack(
-                  children: [
-                    _buildScanOverlay(left, top, squareSize, size),
-                  ],
+                  children: [_buildScanOverlay(left, top, squareSize, size)],
                 );
               },
             ),
@@ -388,8 +392,11 @@ class _ScanQRPageState extends State<ScanQRPage> {
                           color: Colors.green.shade50,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: const Icon(Icons.check_circle,
-                            size: 48, color: Colors.green),
+                        child: const Icon(
+                          Icons.check_circle,
+                          size: 48,
+                          color: Colors.green,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       const Text(
@@ -432,7 +439,8 @@ class _ScanQRPageState extends State<ScanQRPage> {
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (_) => const ScanQRPage()),
+                                      builder: (_) => const ScanQRPage(),
+                                    ),
                                   );
                                 },
                                 icon: const Icon(Icons.refresh),
@@ -460,7 +468,11 @@ class _ScanQRPageState extends State<ScanQRPage> {
   }
 
   Widget _buildScanOverlay(
-      double left, double top, double size, Size screenSize) {
+    double left,
+    double top,
+    double size,
+    Size screenSize,
+  ) {
     return Stack(
       children: [
         IgnorePointer(
@@ -511,10 +523,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                   top: 0,
                   left: 0,
                   right: 0,
-                  child: Container(
-                    height: 3,
-                    color: const Color(0xFF4CAF50),
-                  ),
+                  child: Container(height: 3, color: const Color(0xFF4CAF50)),
                 ),
               ],
             ),
@@ -564,10 +573,7 @@ class _ScannerOverlayPainter extends CustomPainter {
 
     final path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..addRRect(RRect.fromRectAndRadius(
-        cutOutRect,
-        const Radius.circular(16),
-      ))
+      ..addRRect(RRect.fromRectAndRadius(cutOutRect, const Radius.circular(16)))
       ..fillType = PathFillType.evenOdd;
 
     canvas.drawPath(path, paint);

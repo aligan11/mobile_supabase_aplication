@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:healthmobile/pages/login_page.dart';
 import 'package:healthmobile/pages/main_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('id_ID', null);
   await Supabase.initialize(
     url: 'https://mvdiylyxtutbtumzdexm.supabase.co',
     publishableKey: 'sb_publishable_K6j9BFSQ-XU4FLOMvqhLTA_ku1SHl8k',

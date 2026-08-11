@@ -84,15 +84,6 @@ class _MainWrapperState extends State<MainWrapper> {
 
             Expanded(
               child: _buildNavItem(
-                3,
-                Icons.location_on_outlined,
-                Icons.location_on,
-                'Map',
-              ),
-            ),
-
-            Expanded(
-              child: _buildNavItem(
                 4,
                 Icons.person_outline,
                 Icons.person,

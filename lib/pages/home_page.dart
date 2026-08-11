@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:healthmobile/AddHealthPage.dart';
 import 'package:healthmobile/pages/doctor_page.dart';
 import 'package:healthmobile/pages/doctor_detail_page.dart';
+import 'package:healthmobile/pages/health/health_history_page.dart';
 import 'package:healthmobile/pages/schedule_page.dart';
 import 'package:healthmobile/pages/map_page.dart';
 import 'package:healthmobile/pages/scan_qr_page.dart';
 import 'package:healthmobile/services/auth_service.dart';
 import 'package:healthmobile/services/doctor_service.dart';
 import 'package:healthmobile/services/appointment_service.dart';
+import 'package:healthmobile/services/health_service.dart';
+import 'package:healthmobile/utils/health_status.dart';
 import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
@@ -20,11 +24,14 @@ class _HomePageState extends State<HomePage> {
   final AuthService _authService = AuthService();
   final DoctorService _doctorService = DoctorService();
   final AppointmentService _appointmentService = AppointmentService();
+  final HealthService _healthService = HealthService();
 
   Map<String, dynamic>? _profile;
   List<Map<String, dynamic>> _popularDoctors = [];
   List<Map<String, dynamic>> _upcomingAppointments = [];
+  Map<String, dynamic>? _latestHealth;
   bool _isLoading = true;
+  bool _healthError = false;
 
   @override
   void initState() {
@@ -34,15 +41,25 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
+    _healthError = false;
     try {
       final profile = await _authService.getProfile();
       final doctors = await _doctorService.getPopularDoctors();
       final appointments = await _appointmentService.getUpcomingAppointments();
+      Map<String, dynamic>? latestHealth;
+      try {
+        latestHealth = await _healthService.getLatestHealthRecord();
+      } catch (e) {
+        debugPrint('Error load latest health (ignore): $e');
+        _healthError = true;
+        latestHealth = null;
+      }
       if (mounted) {
         setState(() {
           _profile = profile;
           _popularDoctors = doctors;
           _upcomingAppointments = appointments;
+          _latestHealth = latestHealth;
           _isLoading = false;
         });
       }
@@ -84,7 +101,7 @@ class _HomePageState extends State<HomePage> {
                       colors: [Color(0xFF1976D2), Color(0xFF4CAF50)],
                     ),
                   ),
-                  padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
                   child: SafeArea(
                     child: SingleChildScrollView(
                       child: Column(
@@ -170,6 +187,8 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     _buildShortcuts(),
                     const SizedBox(height: 32),
+                    _buildHealthSection(),
+                    const SizedBox(height: 32),
                     _buildSectionTitle('Dokter Populer'),
                     const SizedBox(height: 16),
                     _isLoading
@@ -194,53 +213,63 @@ class _HomePageState extends State<HomePage> {
   Widget _buildShortcuts() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildShortcutItem(
-              icon: Icons.people_alt_rounded,
-              label: 'Dokter',
-              color: const Color(0xFF1976D2),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const DoctorPage()),
-                );
-              },
+            Expanded(
+              child: _buildShortcutItem(
+                icon: Icons.people_alt_rounded,
+                label: 'Dokter',
+                color: const Color(0xFF1976D2),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const DoctorPage()),
+                  );
+                },
+              ),
             ),
-            _buildShortcutItem(
-              icon: Icons.calendar_month_rounded,
-              label: 'Jadwal',
-              color: const Color(0xFF4CAF50),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SchedulePage()),
-                );
-              },
+            Expanded(
+              child: _buildShortcutItem(
+                icon: Icons.calendar_month_rounded,
+                label: 'Jadwal',
+                color: const Color(0xFF4CAF50),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SchedulePage(),
+                    ),
+                  );
+                },
+              ),
             ),
-            _buildShortcutItem(
-              icon: Icons.location_on_rounded,
-              label: 'Map',
-              color: const Color(0xFFFF9800),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MapPage()),
-                );
-              },
+
+            Expanded(
+              child: _buildShortcutItem(
+                icon: Icons.location_on_rounded,
+                label: 'Map',
+                color: const Color(0xFFFF9800),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MapPage()),
+                  );
+                },
+              ),
             ),
-            _buildShortcutItem(
-              icon: Icons.qr_code_scanner_rounded,
-              label: 'Scan QR',
-              color: const Color(0xFF9C27B0),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ScanQRPage()),
-                );
-              },
+            Expanded(
+              child: _buildShortcutItem(
+                icon: Icons.qr_code_scanner_rounded,
+                label: 'Scan',
+                color: const Color(0xFF9C27B0),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ScanQRPage()),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -258,7 +287,7 @@ class _HomePageState extends State<HomePage> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: Column(
           children: [
             Container(
@@ -274,6 +303,373 @@ class _HomePageState extends State<HomePage> {
             Text(
               label,
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHealthSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: const [
+            Text(
+              'Kondisi Kesehatan Terakhir',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _isLoading
+            ? const Card(
+                child: SizedBox(
+                  height: 180,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              )
+            : _latestHealth != null
+            ? _buildHealthCard()
+            : _healthError
+            ? _buildHealthErrorCard()
+            : _buildHealthEmptyCard(),
+      ],
+    );
+  }
+
+  String _formatHealthDate(dynamic value) {
+    try {
+      if (value == null) return '-';
+      DateTime d;
+      if (value is DateTime) {
+        d = value;
+      } else {
+        d = DateTime.parse(value.toString());
+      }
+      return DateFormat('dd MMM yyyy', 'id_ID').format(d);
+    } catch (_) {
+      return value?.toString() ?? '-';
+    }
+  }
+
+  Widget _buildHealthCard() {
+    final r = _latestHealth!;
+    final berat = (r['berat'] as num?)?.toDouble();
+    final tekanan = r['tekanan_darah']?.toString() ?? '-';
+    final detak = (r['detak_jantung'] as num?)?.toInt();
+    final tanggal = r['tanggal'] ?? r['created_at'];
+
+    final tdStatus = HealthStatusHelper.getTekananDarahStatus(tekanan);
+    final tdColor = HealthStatusHelper.getStatusColor(tdStatus);
+    final djStatus = detak != null
+        ? HealthStatusHelper.getDetakJantungStatus(detak)
+        : '-';
+    final djColor = HealthStatusHelper.getStatusColor(djStatus);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HealthHistoryPage()),
+        );
+      },
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFE91E63), Color(0xFFFF9800)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.health_and_safety,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Pencatatan Terbaru',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatHealthDate(tanggal),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Lihat Riwayat',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 18,
+                        color: Colors.blue.shade700,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.monitor_weight_outlined,
+                            color: Color(0xFF1976D2),
+                            size: 22,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            berat != null
+                                ? '${berat.toStringAsFixed(1)} kg'
+                                : '-',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1976D2),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Berat',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tdColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.favorite_border, color: tdColor, size: 22),
+                          const SizedBox(height: 6),
+                          Text(
+                            tekanan,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: tdColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Tekanan',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: djColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.monitor_heart_outlined,
+                            color: djColor,
+                            size: 22,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            detak != null ? '$detak bpm' : '-',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: djColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Detak',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHealthEmptyCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Icon(
+              Icons.health_and_safety_outlined,
+              size: 56,
+              color: Colors.blue.shade200,
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Belum ada catatan kesehatan',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Mulai catat kesehatan Anda untuk monitoring rutin.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              height: 46,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddHealthPage(),
+                    ),
+                  );
+                  if (result == true) {
+                    _loadData();
+                  }
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Tambah Catatan Pertama'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHealthErrorCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const Icon(
+              Icons.warning_amber_outlined,
+              size: 48,
+              color: Colors.orange,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Fitur kesehatan perlu diaktifkan',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Jalankan SQL Migration tabel catatan_kesehatan & RLS di Supabase SQL Editor.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Tetap coba tambah data ↓',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.blue.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 44,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddHealthPage(),
+                    ),
+                  );
+                  if (result == true) {
+                    _loadData();
+                  }
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Coba Tambah Catatan'),
+              ),
             ),
           ],
         ),

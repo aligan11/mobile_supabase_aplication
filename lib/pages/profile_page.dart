@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:healthmobile/pages/login_page.dart';
-import 'package:healthmobile/AddHealthPage.dart';
+import 'package:healthmobile/pages/scan_qr_page.dart';
+import 'package:healthmobile/pages/health/health_history_page.dart';
 import 'package:healthmobile/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -551,12 +552,14 @@ class _ProfilePageState extends State<ProfilePage> {
               child: const Icon(Icons.monitor_heart, color: Color(0xFF1976D2)),
             ),
             title: const Text('Catatan Kesehatan'),
-            subtitle: const Text('Tambah data kesehatan Anda'),
+            subtitle: const Text('Riwayat & tambah data kesehatan'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AddHealthPage()),
+                MaterialPageRoute(
+                  builder: (context) => const HealthHistoryPage(),
+                ),
               );
             },
           ),
@@ -580,7 +583,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ProfilePage()),
+                MaterialPageRoute(builder: (context) => const ScanQRPage()),
               );
             },
           ),
