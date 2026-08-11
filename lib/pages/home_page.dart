@@ -86,69 +86,77 @@ class _HomePageState extends State<HomePage> {
                   ),
                   padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
                   child: SafeArea(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 28,
-                              backgroundColor: Colors.white,
-                              backgroundImage: NetworkImage(avatarUrl),
-                              child: _profile?['avatar_url'] == null
-                                  ? Text(
-                                      firstLetter,
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF1976D2),
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${_getGreeting()},',
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.9),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  Text(
-                                    name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 28,
+                                backgroundColor: Colors.white,
+                                backgroundImage: NetworkImage(avatarUrl),
+                                child: _profile?['avatar_url'] == null
+                                    ? Text(
+                                        firstLetter,
+                                        style: const TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF1976D2),
+                                        ),
+                                      )
+                                    : null,
                               ),
+
+                              const SizedBox(width: 16),
+
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${_getGreeting()},',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.9),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      name,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          const Text(
+                            'Selamat Datang di MediCare',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Selamat Datang di MediCare',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Pelayanan kesehatan terpercaya untuk Anda',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 14,
+
+                          const SizedBox(height: 4),
+
+                          Text(
+                            'Pelayanan kesehatan terpercaya untuk Anda',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 14,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -265,10 +273,7 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 8),
             Text(
               label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ],
         ),
@@ -282,10 +287,7 @@ class _HomePageState extends State<HomePage> {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -313,20 +315,21 @@ class _HomePageState extends State<HomePage> {
     }
 
     return SizedBox(
-      height: 180,
+      height: 200,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 4),
         itemCount: _popularDoctors.length,
         itemBuilder: (context, index) {
-          final doctor = _popularDoctors[index];
-          return _buildDoctorCard(doctor);
+          return _buildDoctorCard(_popularDoctors[index]);
         },
       ),
     );
   }
 
   Widget _buildDoctorCard(Map<String, dynamic> doctor) {
-    final photoUrl = doctor['photo_url'] ??
+    final photoUrl =
+        doctor['photo_url'] ??
         'https://ui-avatars.com/api/?name=${Uri.encodeComponent(doctor['name'] ?? 'Dr')}&background=1976D2&color=fff';
 
     return Padding(
@@ -346,12 +349,12 @@ class _HomePageState extends State<HomePage> {
           child: Card(
             clipBehavior: Clip.antiAlias,
             child: Column(
+              mainAxisSize: MainAxisSize.min, // TAMBAHKAN INI
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
+                SizedBox(
                   height: 90,
                   width: double.infinity,
-                  color: Colors.blue.shade50,
                   child: Image.network(
                     photoUrl,
                     fit: BoxFit.cover,
@@ -364,9 +367,11 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
+
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min, // TAMBAHKAN INI
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
@@ -378,17 +383,18 @@ class _HomePageState extends State<HomePage> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+
                       const SizedBox(height: 4),
+
                       Text(
                         doctor['specialty'] ?? 'Spesialis',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+
                       const SizedBox(height: 8),
+
                       Row(
                         children: [
                           Container(
@@ -401,16 +407,21 @@ class _HomePageState extends State<HomePage> {
                               shape: BoxShape.circle,
                             ),
                           ),
+
                           const SizedBox(width: 6),
-                          Text(
-                            doctor['available'] == true
-                                ? 'Tersedia'
-                                : 'Penuh',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: doctor['available'] == true
-                                  ? Colors.green
-                                  : Colors.red,
+
+                          Flexible(
+                            child: Text(
+                              doctor['available'] == true
+                                  ? 'Tersedia'
+                                  : 'Penuh',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: doctor['available'] == true
+                                    ? Colors.green
+                                    : Colors.red,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -434,8 +445,11 @@ class _HomePageState extends State<HomePage> {
           child: Center(
             child: Column(
               children: [
-                Icon(Icons.calendar_month_outlined,
-                    size: 48, color: Colors.grey[400]),
+                Icon(
+                  Icons.calendar_month_outlined,
+                  size: 48,
+                  color: Colors.grey[400],
+                ),
                 const SizedBox(height: 8),
                 const Text(
                   'Belum ada jadwal konsultasi',
@@ -443,13 +457,14 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
-                  height: 40,
+                  height: 45,
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const SchedulePage()),
+                          builder: (context) => const SchedulePage(),
+                        ),
                       );
                     },
                     child: const Text('Buat Jadwal'),
@@ -503,16 +518,16 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: 4),
                       Text(
                         doctor?['specialty'] ?? 'Spesialis',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          Icon(Icons.calendar_today,
-                              size: 14, color: Colors.grey[600]),
+                          Icon(
+                            Icons.calendar_today,
+                            size: 14,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             _formatDate(date),
@@ -522,11 +537,17 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          Icon(Icons.access_time,
-                              size: 14, color: Colors.grey[600]),
+                          Icon(
+                            Icons.access_time,
+                            size: 14,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 4),
                           Text(
-                            schedule?['start_time']?.toString().substring(0, 5) ??
+                            schedule?['start_time']?.toString().substring(
+                                  0,
+                                  5,
+                                ) ??
                                 '-',
                             style: TextStyle(
                               fontSize: 12,

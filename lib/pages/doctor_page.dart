@@ -37,9 +37,9 @@ class _DoctorPageState extends State<DoctorPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat data: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal memuat data: $e')));
       }
     }
   }
@@ -107,7 +107,9 @@ class _DoctorPageState extends State<DoctorPage> {
                   borderSide: BorderSide.none,
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
             ),
           ),
@@ -117,14 +119,14 @@ class _DoctorPageState extends State<DoctorPage> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _filteredDoctors.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _filteredDoctors.length,
-                          itemBuilder: (context, index) {
-                            return _buildDoctorItem(_filteredDoctors[index]);
-                          },
-                        ),
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _filteredDoctors.length,
+                      itemBuilder: (context, index) {
+                        return _buildDoctorItem(_filteredDoctors[index]);
+                      },
+                    ),
             ),
           ),
         ],
@@ -165,7 +167,8 @@ class _DoctorPageState extends State<DoctorPage> {
   }
 
   Widget _buildDoctorItem(Map<String, dynamic> doctor) {
-    final photoUrl = doctor['photo_url'] ??
+    final photoUrl =
+        doctor['photo_url'] ??
         'https://ui-avatars.com/api/?name=${Uri.encodeComponent(doctor['name'] ?? 'Dr')}&background=1976D2&color=fff&size=128';
 
     return Padding(
@@ -223,8 +226,11 @@ class _DoctorPageState extends State<DoctorPage> {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          Icon(Icons.medical_services_outlined,
-                              size: 16, color: Colors.grey[600]),
+                          Icon(
+                            Icons.medical_services_outlined,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
@@ -241,8 +247,11 @@ class _DoctorPageState extends State<DoctorPage> {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            Icon(Icons.location_on_outlined,
-                                size: 16, color: Colors.grey[600]),
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 16,
+                              color: Colors.grey[600],
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
